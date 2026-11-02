@@ -12,7 +12,7 @@ MigIQ is an end-to-end orchestration skill that automates complete application m
 
 When you say **"migrate this app to Quarkus"** (or any target technology), MigIQ automatically:
 
-1. **Analyzes** your codebase using [rgctl](https://github.com/sshaaf/rgctl) knowledge graphs
+1. **Analyzes** your codebase using [rgctl](https://github.com/rgctl/rgctl) knowledge graphs
 2. **Gathers** migration requirements through interactive prompts
 3. **Plans** the migration with detailed tasks and user stories
 4. **Executes** the migration plan with automated implementation
@@ -50,10 +50,7 @@ After the orchestration completes, you'll have:
 
 ```
 your-project/
-├── rgctl index                # Phase 1: Analysis
-│   ├── graph.json
-│   ├── rgctl metrics / migration plan
-│   └── graph.html
+├── .rgctl/                    # Phase 1: rgctl discover artifacts
 │
 ├── mig-prompt-workspace/      # Migration requirements
 │   └── migration-prompt.md
@@ -130,7 +127,7 @@ Duration depends on codebase complexity, migration scope, and target technology.
 ## Dependencies
 
 **Required:**
-- **rgctl** CLI + skill ([rgctl](https://github.com/sshaaf/rgctl)) — codebase analysis
+- **rgctl** CLI + skill ([rgctl](https://github.com/rgctl/rgctl)) — codebase analysis
 - **Cursor** or **Claude Code** with skills
 
 **Installed by MigIQ:**
@@ -170,7 +167,7 @@ Spring Security, and about 15 controllers. Need it running on OpenShift."
 ```
 
 **What happens**:
-1. Graphify analyzes Spring components
+1. rgctl indexes the repo (`.rgctl/`) and analyzes Spring components
 2. Prompt builder captures Quarkus target, OpenShift platform
 3. Planner creates migration tasks (Spring → Quarkus annotations, dependency updates)
 4. Executor implements changes, generates tests, creates Dockerfile, produces OpenShift YAMLs
@@ -190,7 +187,7 @@ Spring Security, and about 15 controllers. Need it running on OpenShift."
 ```
 
 **What happens**:
-1. Graphify analyzes Node.js structure
+1. rgctl indexes the repo (`.rgctl/`) and analyzes Node.js structure
 2. Prompt builder asks about target Node version, patterns to adopt
 3. Planner creates modernization tasks (async/await, error handling, dependency updates)
 4. Executor implements improvements, adds containerization
@@ -210,7 +207,7 @@ Spring Security, and about 15 controllers. Need it running on OpenShift."
 ```
 
 **What happens**:
-1. Graphify identifies EJB structure, entity beans, deployment descriptors
+1. rgctl indexes the repo (`.rgctl/`) and identifies EJB structure, entity beans, deployment descriptors
 2. Prompt builder captures Spring Boot version, decomposition approach
 3. Planner creates EJB → Spring conversion tasks
 4. Executor implements migration (may have partial success on complex EJBs)

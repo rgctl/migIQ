@@ -5,7 +5,7 @@
 [![Status](https://img.shields.io/badge/status-ready--for--testing-green)]()
 [![Migration Success](https://img.shields.io/badge/migration-5--phase--orchestration-blue)]()
 [![Platform](https://img.shields.io/badge/platform-OpenShift-red)]()
-[![npm version](https://img.shields.io/npm/v/@sshaaf/migiq)]()
+[![npm version](https://img.shields.io/npm/v/@rgctl/migiq)]()
 
 ---
 
@@ -13,18 +13,20 @@
 
 Minimum to install and run a migration:
 
-1. **[rgctl](https://github.com/sshaaf/rgctl/releases)** — MigIQ install runs `rgctl install --skill` and exits if the CLI is missing (`~/.local/bin/rgctl` is checked even when not on PATH)
+1. **[rgctl](https://github.com/rgctl/rgctl/releases)** — MigIQ install runs `rgctl install --skill` and exits if the CLI is missing (`~/.local/bin/rgctl` is checked even when not on PATH)
 2. **Claude Code** with agent skills enabled
-3. **Node.js** 14+ (for `npx @sshaaf/migiq`)
+3. **Node.js** 14+ (for `npx @rgctl/migiq`)
 
 For Phase 1 analysis, run from your **app repo root** (not the migiq workspace):
 
+> **Package rename:** Use `@rgctl/migiq` / [rgctl/migIQ](https://github.com/rgctl/migIQ). The former `@sshaaf/migiq` name is obsolete.
+
 ```bash
 cd /path/to/your-app
-rgctl discover .   # indexes via default daemon → ~/.rgctl/cache/
+rgctl discover .   # writes artifacts to {repo}/.rgctl/
 ```
 
-Use `rgctl --no-daemon discover .` only if you need artifacts in `{repo}/.rgctl/` (CI, reproducible builds). Do **not** run `rgctl -r PATH discover .` — the trailing `.` ignores `-r`.
+Do **not** run `rgctl -r PATH discover .` — the trailing `.` ignores `-r`. Legacy `~/.rgctl/cache/` is obsolete; re-discover if you still have an old daemon cache.
 
 OpenShift, Podman, and other tools are only needed when you reach containerize/deploy phases.
 
@@ -34,10 +36,10 @@ Install MigIQ:
 
 ```bash
 # Global (recommended for Claude Code — all projects)
-npx @sshaaf/migiq -g
+npx @rgctl/migiq -g
 
 # Or local to one repo (.claude/skills in that project)
-npx @sshaaf/migiq
+npx @rgctl/migiq
 ```
 
 Then in **Claude Code** — start a **new session** (`/exit`, then `claude` again) so skills reload:
@@ -204,10 +206,7 @@ After a migration, you'll have:
 
 ```
 your-project/
-├── rgctl index (daemon cache) # Phase 1: Analysis
-│   ├── graph.json            # Knowledge graph
-│   ├── rgctl metrics / migration plan
-│   └── graph.html            # Interactive visualization
+├── .rgctl/                    # Phase 1: rgctl discover artifacts
 │
 ├── mig-prompt-workspace/      # Phase 2: Requirements
 │   └── migration-prompt.md   # Standardized prompt
@@ -244,7 +243,7 @@ the examples/spring-boot-to-quarkus.tar.gz has an example of a completed migrati
 
 ### Individual Skills
 - [mig-rgctl workflow](mig-rgctl/references/workflow.md) — MigIQ phase commands, artifact checks, discover flags
-- [rgctl docs](https://github.com/sshaaf/rgctl/blob/main/docs/installation.md) — install, daemon modes, upstream agent skill
+- [rgctl docs](https://github.com/rgctl/rgctl/blob/main/docs/installation.md) — install, daemon modes, upstream agent skill
 - [mig-prompt-builder/SKILL.md](./mig-prompt-builder/SKILL.md) - Requirements
 - [mig-plan/SKILL.md](./mig-plan/SKILL.md) - Planning
 - [mig-execute/SKILL.md](./mig-execute/SKILL.md) - Execution

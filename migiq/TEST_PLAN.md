@@ -260,18 +260,31 @@ WARNINGS=0
 
 # Phase 1 outputs
 echo "Phase 1: Codebase Analysis"
-if rgctl -f json metrics --pagerank >/dev/null 2>&1; then
+if rgctl -f json metrics --pagerank; then
     echo "  ✅ rgctl index responds"
 else
     echo "  ❌ rgctl index not available (run rgctl discover .)"
     ((ERRORS++))
 fi
 
-if rgctl -f json communities list 2>/dev/null | grep -q community; then
+COMMUNITIES_JSON=$(rgctl -f json communities list) || {
+    echo "  ❌ communities list failed (rgctl error above)"
+    ((ERRORS++))
+    COMMUNITIES_JSON=""
+}
+if [ -n "$COMMUNITIES_JSON" ] && echo "$COMMUNITIES_JSON" | grep -q community; then
     echo "  ✅ communities list responds"
 else
     echo "  ⚠️  communities list empty or unavailable"
     ((WARNINGS++))
+fi
+if [ -f .rgctl/migration_plan.json ]; then
+    if jq -e '[.steps[] | select(.label != "root")] | length > 0' .rgctl/migration_plan.json >/dev/null; then
+        echo "  ✅ migration_plan.json v2 .steps[] present"
+    else
+        echo "  ⚠️  migration_plan.json missing non-root steps"
+        ((WARNINGS++))
+    fi
 fi
 echo ""
 

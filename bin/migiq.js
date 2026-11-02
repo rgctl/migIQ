@@ -27,7 +27,7 @@ if (showHelp) {
 AI-powered application migration orchestrator for Claude Code
 
 USAGE:
-  npx @sshaaf/migiq [options]
+  npx @rgctl/migiq [options]
 
 OPTIONS:
   -g, --global    Install to global ~/.claude and ~/.cursor directories
@@ -38,10 +38,10 @@ OPTIONS:
 
 EXAMPLES:
   # Install to local project (.claude and .cursor)
-  npx @sshaaf/migiq
+  npx @rgctl/migiq
 
   # Install globally (~/.claude and ~/.cursor)
-  npx @sshaaf/migiq -g
+  npx @rgctl/migiq -g
 
 WHAT GETS INSTALLED:
   • Migrator Agent (autonomous mode)
@@ -57,7 +57,7 @@ WHAT GETS INSTALLED:
     - mig-deploy (deployment)
 
 PREREQUISITES:
-  • rgctl CLI — https://github.com/sshaaf/rgctl/releases
+  • rgctl CLI — https://github.com/rgctl/rgctl/releases
   • Cursor or Claude Code with skills
   • Node.js 14+
 
@@ -68,7 +68,7 @@ AFTER INSTALLATION:
     /migiq                  - Interactive migration (lowercase)
 
 DOCUMENTATION:
-  https://github.com/sshaaf/migIQ
+  https://github.com/rgctl/migIQ
 
   `);
   process.exit(0);

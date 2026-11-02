@@ -1,24 +1,30 @@
 # MigIQ rgctl Workflow
 
-Phase-specific rgctl commands for MigIQ skills. Upstream reference: [rgctl workflows](https://github.com/sshaaf/rgctl/blob/main/skills/rgctl/references/workflows.md).
+Phase-specific rgctl commands for MigIQ skills. Upstream: [rgctl workflows](https://github.com/rgctl/rgctl/blob/main/skills/rgctl/references/workflows.md) and skills **rgctl-migrate** / **rgctl-review**.
+
+Artifacts live at **`{repo}/.rgctl/`** after `rgctl discover .`. Legacy `~/.rgctl/cache/` is obsolete — re-discover or copy into the repo.
 
 ## Artifact Checklist
 
-Run these after `discover` to confirm the graph is usable:
+Run after `discover` (do **not** use `2>/dev/null` on rgctl):
 
 ```bash
 # 1. Index exists
 rgctl -f json metrics --pagerank
 
-# 2. Communities present (required for subsystem mapping)
+# 2. Communities (subsystem mapping)
 rgctl -f json communities list | jq '.communities | length'
 
-# 3. Migration plan (only when --export-migration-hints was used)
-test -f .rgctl/migration_plan.json || test -f .rgctl/dashboard/migration_plan.json \
-  || ls ~/.rgctl/cache/*/.rgctl/migration_plan.json 2>/dev/null
+# 3. Migration plan (when --export-migration-hints was used)
+test -f .rgctl/migration_plan.json || test -f .rgctl/dashboard/migration_plan.json
+
+# 4. Plan v2 steps (bounded)
+jq '[.steps[] | select(.label != "root")] | .[0:20]' .rgctl/migration_plan.json
 ```
 
-With the default daemon, replace `.rgctl/` paths with the cache path under `~/.rgctl/cache/<reponame>/.rgctl/`.
+**Standing rule:** After any MigIQ phase or execute wave that **changes application source files**, run `rgctl update` (optionally `--files …`) **before** the next phase, wave, or graph query. Do not wait until `status` already shows stale — large migrations drift the graph every batch of edits.
+
+If the working tree is dirty and `rgctl -f json status` shows `index_current: false`, run `rgctl update` once before re-querying.
 
 ---
 
@@ -40,17 +46,17 @@ rgctl discover . --with-cfg --with-security --with-taint \
 rgctl -f json metrics --pagerank --communities | jq '.pagerank.top[:5]'
 rgctl -f json communities list
 rgctl -f json gql --macro-name all_communities unused
+jq '[.steps[] | select(.label != "root") | {step, label, schedule_step}] | .[0:20]' \
+  .rgctl/migration_plan.json
 ```
-
-**Read:** `migration_plan.json` (or dashboard copy) for package ordering and hints.
 
 | Flag | Why MigIQ needs it |
 |------|-------------------|
-| `--with-cfg` | CPG slice/flows during mig-execute |
+| `--with-cfg` | Whole-repo CFG/PDG for taint / mutations / batch inspect |
 | `--with-security` | Secrets scanning for containerize/deploy |
 | `--with-taint` | Data-flow / injection risks |
 | `--with-harmonic` | Migration hotspot ranking |
-| `--export-migration-hints` | `migration_plan.json` for mig-plan |
+| `--export-migration-hints` | `.rgctl/migration_plan.json` (v2 `.steps[]`) for mig-plan |
 | `--with-dashboard` | Human-readable migration dashboard |
 
 ---
@@ -59,31 +65,23 @@ rgctl -f json gql --macro-name all_communities unused
 
 **Prerequisite:** Phase 1 discover completed (or equivalent).
 
-**Queries to build the migration prompt:**
-
 ```bash
-# Stack & scale
 rgctl -f json metrics --pagerank --communities
-
-# Subsystems / modules
 rgctl -f json communities list
-
-# Framework & dependency signals
 rgctl -f json gql "MATCH (n:Function) RETURN n LIMIT 20"
 rgctl -f json gql "MATCH (a)-[r:USES|DEPENDSON]->(b) RETURN a,b LIMIT 50"
 
-# Migration plan context (if exported)
-cat .rgctl/migration_plan.json   # or daemon cache path
+jq '[.steps[] | select(.label != "root")] | .[0:20]' .rgctl/migration_plan.json
 ```
 
 **Deduce for migration-prompt.md:**
 
-- Languages, frameworks, build system (from discover language + GQL)
-- Monolith vs modular (community count, pagerank distribution)
-- Integration points (USES/DEPENDSON edges, external libs)
-- Risk hotspots (pagerank top, harmonic if enabled)
-- Suggested migration order (`migration_plan.json` packages)
-- Technical risks (security findings, taint paths, Kantra violations if `--with-kantra`)
+- Languages, frameworks, build system
+- Monolith vs modular (community count, pagerank)
+- Integration points (USES/DEPENDSON)
+- Risk hotspots (pagerank / harmonic)
+- Suggested migration **order from `.steps[]`** (not v1 `packages[]`)
+- Technical risks (security, taint, Kantra if `--with-kantra`)
 
 ---
 
@@ -92,17 +90,13 @@ cat .rgctl/migration_plan.json   # or daemon cache path
 **Prerequisite:** `mig-prompt-workspace/migration-prompt.md` + indexed graph.
 
 ```bash
-# Confirm communities for task grouping
 rgctl -f json communities list
-
-# Per-community scope for task groups
 rgctl -f json gql --macro-name all_communities unused
-
-# Blast radius for high-risk tasks
 rgctl -f json blast-radius <Symbol> --depth 2
 
-# Migration package order
-# read migration_plan.json → map packages to task groups
+# Map non-root steps → task groups
+jq '[.steps[] | select(.label != "root") | {step, label, schedule_step, priority_rank}]' \
+  .rgctl/migration_plan.json
 ```
 
 ---
@@ -111,31 +105,14 @@ rgctl -f json blast-radius <Symbol> --depth 2
 
 **Prerequisite:** Graph indexed. Prefer discover with `--with-cfg --with-security --with-taint --with-harmonic` if not already done.
 
-**Step 1 — Verify index + communities:**
-
 ```bash
 rgctl -f json metrics --pagerank
 rgctl -f json communities list    # STOP if empty — re-discover with --with-harmonic
-```
-
-**Step 2 — Language, dependencies, blockers:**
-
-```bash
-rgctl -f json gql "MATCH (n:Function) RETURN n LIMIT 20"
-rgctl -f json metrics --pagerank --communities
 rgctl -f json gql "MATCH (a)-[r:USES|DEPENDSON]->(b) RETURN a,b LIMIT 50"
 rgctl -f json semantic query "file path upload storage localhost" --limit 10
 ```
 
-**Map communities → container boundaries:** Each named community is a candidate deployable unit or shared library layer.
-
-| Concern | rgctl command |
-|---------|---------------|
-| External DB/cache/queue | GQL USES/DEPENDSON |
-| Hardcoded paths / localhost | semantic query + source grep |
-| Secrets in config | `--with-security` findings |
-| Tainted input → filesystem | `--with-taint` paths |
-| Shared library coupling | communities list + blast-radius |
+Map communities → container boundaries. Shared coupling: `communities list` + `blast-radius`.
 
 ---
 
@@ -148,21 +125,35 @@ rgctl -f json blast-radius <Symbol> --depth 2
 # Call neighborhood
 rgctl -f json gql "MATCH (a:Function)-[:CALLS*1..3]->(b:Function) WHERE a.name = '<fn>' RETURN a,b LIMIT 50"
 
-# Data flow (requires --with-cfg discover)
-rgctl -f json cpg flows <file> --line <n> --variable <var> --function <fn> --direction forward
+# One-off data flow / slice — lazy CFG OK (optional --function / --with-alias)
+rgctl -f json slice <file> --line <n> --variable <var>
+rgctl -f json cpg flows <file> --line <n> --variable <var> --direction forward
 ```
+
+Reserve rediscover `--with-cfg` for taint/mutations/batch inspect — not for every slice.
+
+### After each migration wave / phase that edits sources (required)
+
+```bash
+rgctl update   # required — keep structural graph current for the next wave/phase
+
+# Example: javax → jakarta
+rgctl -f json find "import javax*" --type import   # expect total == 0
+
+# Optional call-path deltas (upstream rgctl-review)
+rgctl -f json review paths --synthetic-head worktree --max-symbols 25
+```
+
+Same rule after mig-test-gen / mig-containerize / mig-deploy when they write into the app tree (not workspace-only markdown).
 
 ---
 
 ## mig-test-gen / mig-deploy
 
 ```bash
-# Test scope — community under test
 rgctl -f json gql "MATCH (f:Function) WHERE f.community_id = '<id>' RETURN f LIMIT 20"
-
-# Deploy — external dependencies & ports (from graph + manifests)
 rgctl -f json gql "MATCH (a)-[r:USES|DEPENDSON]->(b) RETURN a,b LIMIT 50"
-rgctl -f json metrics --pagerank   # prioritize smoke tests on hotspots
+rgctl -f json metrics --pagerank
 ```
 
 ---
@@ -172,10 +163,10 @@ rgctl -f json metrics --pagerank   # prioritize smoke tests on hotspots
 | Stage | Recommended discover flags |
 |-------|---------------------------|
 | migiq Phase 1 | `--with-cfg --with-security --with-taint --with-dashboard --with-harmonic --export-migration-hints` |
-| mig-prompt-builder | *(reuse Phase 1 index)* |
-| mig-plan | *(reuse Phase 1 index)* + read `migration_plan.json` |
+| mig-prompt-builder | *(reuse Phase 1 index)*; plan via `.steps[]` |
+| mig-plan | *(reuse)* + `.rgctl/migration_plan.json` v2 |
 | mig-containerize | `--with-cfg --with-security --with-taint --with-harmonic` (if re-indexing) |
-| mig-execute | *(reuse index)*; `--with-cfg` required for CPG slice/flows |
+| mig-execute | `rgctl update` after edits; lazy `slice`/`cpg flows`; `--with-cfg` for taint/mutations |
 | Java framework migration | add `--with-kantra --kantra-target <target>` |
 
-Full flag reference: [rgctl Migration Feature-Flag Cheat Sheet](https://github.com/sshaaf/rgctl/blob/main/skills/rgctl/references/workflows.md#migration-feature-flag-cheat-sheet).
+Full flag reference: [rgctl Migration Feature-Flag Cheat Sheet](https://github.com/rgctl/rgctl/blob/main/skills/rgctl/references/workflows.md#migration-feature-flag-cheat-sheet).

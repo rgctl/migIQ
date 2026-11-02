@@ -13,11 +13,11 @@ This skill containerizes applications for OpenShift using Red Hat Universal Base
 
 **Prerequisite:** Codebase indexed with rgctl via **mig-rgctl**.
 
-1. **Verify index exists** (daemon or in-repo `.rgctl/`):
+1. **Verify index exists** (artifacts at `{repo}/.rgctl/` after `rgctl discover .`):
    ```bash
    rgctl -f json metrics --pagerank
    ```
-   If this fails, invoke **mig-rgctl**, run discover with containerization flags (see workflow), then STOP.
+   If this fails, invoke **mig-rgctl**, run discover with containerization flags (see workflow), then STOP. If the index exists but is stale (`rgctl -f json status`), run `rgctl update` first. After this skill writes Dockerfiles / app-tree files, run `rgctl update` before any further graph queries or the next migration phase.
 
 2. **Verify communities** (required for subsystem → container mapping):
    ```bash
@@ -25,7 +25,7 @@ This skill containerizes applications for OpenShift using Red Hat Universal Base
    ```
    If empty, re-run discover with `--with-harmonic` (see mig-rgctl workflow), then STOP.
 
-3. **Artifact note:** With the default daemon, artifacts live under `~/.rgctl/cache/<reponame>/.rgctl/` — an in-repo `.rgctl/` folder is only guaranteed with `rgctl --no-daemon discover .`.
+3. **Artifact note:** Graph artifacts live under `{repo}/.rgctl/`. Legacy `~/.rgctl/cache/` is obsolete — re-run `rgctl discover .` rather than requiring `--no-daemon`.
 
 ## When to Use This Skill
 

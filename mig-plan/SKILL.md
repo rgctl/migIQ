@@ -274,7 +274,7 @@ Create `mig-plan-workspace/UserStory.md` that groups tasks into user stories.
 When this skill runs, follow these steps in order:
 
 1. **Invoke mig-rgctl** if the repo is not indexed yet ([workflow](../mig-rgctl/references/workflow.md))
-2. **Query knowledge graph** via mig-rgctl recipes
+2. **Query knowledge graph** via mig-rgctl recipes; map task groups from `.rgctl/migration_plan.json` v2 `.steps[]` (exclude `"root"`; bound with `jq`)
 3. **Read migration prompt** from mig-prompt-workspace/migration-prompt.md (should already exist from mig-prompt-builder)
    - If migration prompt doesn't exist, prompt the user to run mig-prompt-builder first or provide migration context
 4. **Generate tasks.md** breaking down the migration prompt into actionable work, using knowledge graph for specifics

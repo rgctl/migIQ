@@ -46,7 +46,7 @@ function resolveRgctlPath() {
 }
 
 /**
- * Install rgctl skill via `rgctl install --skill` (see https://github.com/sshaaf/rgctl/docs/installation.md).
+ * Install rgctl skill via `rgctl install --skill` (see https://github.com/rgctl/rgctl/docs/installation.md).
  * Throws if rgctl is missing or install --skill fails.
  */
 function installRgctlSkill(isGlobal) {
@@ -54,7 +54,7 @@ function installRgctlSkill(isGlobal) {
   if (!rgctl) {
     throw new Error(
       'rgctl CLI is required but not found on PATH.\n' +
-      'Install from https://github.com/sshaaf/rgctl/releases\n' +
+      'Install from https://github.com/rgctl/rgctl/releases\n' +
       'Typical location: ~/.local/bin/rgctl\n' +
       'Then re-run: npm install (or node install.js)'
     );
@@ -231,7 +231,7 @@ This directory contains the MigIQ migration platform for Cursor and Claude Code.
 ### Skills (use with /migiq in Cursor or Claude Code)
 - **migiq** - Main orchestration skill
 - **mig-rgctl** - MigIQ-specific rgctl analysis (phase commands, artifact checks)
-- **rgctl** - Upstream code knowledge graph ([rgctl](https://github.com/sshaaf/rgctl) CLI, via \`rgctl install --skill\`)
+- **rgctl** - Upstream code knowledge graph ([rgctl](https://github.com/rgctl/rgctl) CLI, via \`rgctl install --skill\`)
 - **mig-prompt-builder** - Migration requirements builder
 - **mig-plan** - Migration planning
 - **mig-execute** - Migration execution
@@ -243,7 +243,7 @@ This directory contains the MigIQ migration platform for Cursor and Claude Code.
 - **migrator** - Autonomous migration agent
 
 ### Prerequisites
-- **rgctl** CLI from [rgctl](https://github.com/sshaaf/rgctl) (required at install; runs \`rgctl install --skill\`)
+- **rgctl** CLI from [rgctl](https://github.com/rgctl/rgctl) (required at install; runs \`rgctl install --skill\`)
 - **Cursor** or **Claude Code** with skills
 - **Node.js** 14+
 
@@ -266,7 +266,7 @@ Agent({
 \`\`\`
 
 ## Documentation
-- Main README: https://github.com/sshaaf/migIQ
+- Main README: https://github.com/rgctl/migIQ
 - Skill Docs: skills/migiq/SKILL.md
 
 ## Version
@@ -312,7 +312,7 @@ NEXT STEPS:
 
 DOCUMENTATION:
   • Quick start: ${targetDirs[0]}/README.migiq.md
-  • Full docs: https://github.com/sshaaf/migIQ
+  • Full docs: https://github.com/rgctl/migIQ
 
 Happy migrating! 🚀
 `);

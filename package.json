@@ -1,6 +1,6 @@
 {
-  "name": "@sshaaf/migiq",
-  "version": "0.2.3",
+  "name": "@rgctl/migiq",
+  "version": "0.4.23",
   "description": "AI-powered application migration orchestrator for modernizing legacy applications to cloud-native platforms",
   "main": "install.js",
   "bin": {
@@ -24,7 +24,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sshaaf/migIQ.git"
+    "url": "git+https://github.com/rgctl/migIQ.git"
   },
   "engines": {
     "node": ">=14.0.0"

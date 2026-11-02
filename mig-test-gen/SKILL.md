@@ -31,7 +31,7 @@ rgctl -f json metrics --pagerank
 rgctl -f json communities list
 ```
 
-If either fails, invoke **mig-rgctl**, run discover per [workflow](../mig-rgctl/references/workflow.md), then STOP.
+If either fails, invoke **mig-rgctl**, run discover per [workflow](../mig-rgctl/references/workflow.md), then STOP. After generating tests into the app tree, run `rgctl update` before further graph queries or the next migration phase.
 
 ### Step 2: Analyze Graph to Identify Critical Code
 

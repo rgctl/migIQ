@@ -57,7 +57,13 @@ First, ensure we have knowledge about the current application. Follow **mig-rgct
    - Integration points
    - Subsystems (from `communities list`)
    - Hotspots (from `metrics --pagerank`)
-   - Migration ordering hints (`migration_plan.json` when present)
+   - Migration ordering from `.rgctl/migration_plan.json` **v2 `.steps[]`** (exclude `label == "root"`; bound with `jq '.[0:20]'`) — not v1 `packages[]`
+
+```bash
+jq '[.steps[] | select(.label != "root") | {
+  step, label, schedule_step, priority_rank
+}] | .[0:20]' .rgctl/migration_plan.json
+```
 
 Full feature → command mapping: [mig-rgctl workflow](../mig-rgctl/references/workflow.md).
 

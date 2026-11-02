@@ -222,14 +222,21 @@ Run from the **application repo root** (where source code lives):
 rgctl -f json metrics --pagerank
 ```
 
-If that fails, the repo is not indexed yet. With the default daemon, artifacts live under `~/.rgctl/cache/` — an in-repo `.rgctl/` folder is normal only with `--no-daemon`.
+If that fails, the repo is not indexed yet. Artifacts live at `{repo}/.rgctl/` after `rgctl discover .`. (Legacy `~/.rgctl/cache/` is obsolete — re-discover rather than relying on it.)
 
-If an index exists and is recent (< 1 day old), ask user:
+If an index exists, check freshness:
+
+```bash
+rgctl -f json status
 ```
-I found existing codebase analysis from [timestamp]. 
+
+If `index_current` is false, prefer `rgctl update` over a full rediscover unless the user asks to cold-rebuild. If the index is recent and current, ask:
+
+```
+I found an existing codebase analysis.
 Would you like to:
-1. Use existing analysis (faster)
-2. Re-analyze codebase (recommended if code changed)
+1. Use existing analysis (faster; run rgctl update if status shows stale)
+2. Re-analyze codebase (full discover — recommended after large structural changes)
 ```
 
 If user chooses to re-analyze or if the index is missing, proceed with analysis.
@@ -249,7 +256,8 @@ Follow **mig-rgctl** ([workflow](../mig-rgctl/references/workflow.md) — Phase 
 cd ..
 
 rgctl discover . --with-cfg --with-security --with-taint \
-  --with-dashboard --with-harmonic --export-migration-hints
+  --with-dashboard --with-harmonic --export-migration-hints \
+  --migration-preset hybrid_default --migration-order scheduled
 ```
 
 Do **not** use `rgctl -r PATH discover .` — the `.` ignores `-r` and indexes the wrong directory.
@@ -261,9 +269,11 @@ Wait for completion. rgctl runs offline with no API calls.
 ```bash
 rgctl -f json metrics --pagerank --communities | jq '.pagerank.top[:5], .communities // empty'
 rgctl -f json gql --macro-name all_communities unused
+jq '[.steps[] | select(.label != "root") | {step, label, schedule_step}] | .[0:20]' \
+  .rgctl/migration_plan.json
 ```
 
-Migration plan (when exported): under the rgctl artifact root — `migration_plan.json` or `dashboard/migration_plan.json` (daemon cache: `~/.rgctl/cache/<reponame>/.rgctl/`).
+Migration plan (when exported): **`.rgctl/migration_plan.json`** (schema v2 `.steps[]`; ignore `label == "root"`). Optional dashboard copy under `.rgctl/dashboard/`.
 
 **Step 4: Log completion**
 
@@ -272,8 +282,8 @@ Update orchestration-log.md:
 ### Phase 1: Codebase Analysis - COMPLETED
 **Duration**: [time]
 **Outputs**:
-- rgctl graph index (daemon cache or `.rgctl/` with `--no-daemon`)
-- migration plan JSON when `--export-migration-hints` was used
+- rgctl graph index at `{repo}/.rgctl/`
+- migration plan JSON v2 (`.steps[]`) when `--export-migration-hints` was used
 
 **Statistics**:
 - Files indexed: [from discover metrics]
@@ -527,6 +537,7 @@ The mig-execute skill will:
 - Load the migration plan from Phase 3
 - Execute tasks in dependency order
 - Parallelize independent tasks
+- After each wave (and any phase that edits app sources), run `rgctl update` so the graph stays current for the next wave/skill
 - Invoke integration skills (mig-test-gen, mig-containerize, mig-deploy)
 - Update task checkboxes in real-time
 - Handle failures gracefully
@@ -810,10 +821,7 @@ All migration artifacts are organized in the following structure:
 
 ```
 project-root/
-├── rgctl index                # Phase 1: Analysis
-│   ├── graph.json
-│   ├── rgctl index (metrics, migration plan)
-│   └── graph.html
+├── .rgctl/                    # Phase 1: rgctl discover artifacts
 │
 ├── mig-prompt-workspace/      # Requirements
 │   └── migration-prompt.md
@@ -961,10 +969,7 @@ Would you like me to:
 
 ```
 project-root/
-├── rgctl index                # Phase 1: Analysis
-│   ├── graph.json
-│   ├── rgctl index (metrics, migration plan)
-│   └── graph.html
+├── .rgctl/                    # Phase 1: rgctl discover artifacts
 │
 ├── mig-prompt-workspace/      # Phase 2: Requirements
 │   └── migration-prompt.md

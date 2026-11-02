@@ -611,7 +611,26 @@ rgctl -f json blast-radius path/to/Symbol --depth 2
 
 # Communities (helps identify independent work)
 rgctl -f json communities list
+
+# One-off slice / flows — lazy CFG OK (see mig-rgctl workflow)
+# rgctl -f json slice FILE --line N --variable V
 ```
+
+### After each completed wave / file-changing phase (required)
+
+Whenever a wave (or user story that edits app sources) finishes — and before starting the next wave, invoking another MigIQ skill that queries the graph, or marking the phase done — refresh the index:
+
+```bash
+rgctl update   # required after every set of source-file changes
+
+# Example: javax.* → jakarta.* namespace migration
+rgctl -f json find "import javax*" --type import   # expect total == 0
+
+# Optional call-path deltas (install upstream rgctl-review skill)
+rgctl -f json review paths --synthetic-head worktree --max-symbols 25
+```
+
+If `rgctl -f json status` shows `index_current: false` mid-wave, run `rgctl update` once — do not full rediscover for ordinary edits. Workspace-only markdown under `*-workspace/` does not require `update`.
 
 ## Sub-Agent Orchestration Best Practices
 
@@ -692,7 +711,7 @@ Skill flow:
 
 **Parallelize wisely**: Independent tasks can run in parallel, but be conservative. It's better to run sequentially than to create race conditions.
 
-**Use rgctl**: When executing code changes, reference the knowledge graph to understand impact and dependencies.
+**Use rgctl**: When executing code changes, reference the knowledge graph to understand impact and dependencies. After every wave that changes app sources, run `rgctl update` before the next queries or phase.
 
 **Track everything**: Log every action, every file change, every decision. The log is invaluable for debugging.
 

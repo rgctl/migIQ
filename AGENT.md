@@ -75,14 +75,15 @@ When assigned a migration task:
    ls -la
    find . -name "pom.xml" -o -name "package.json" -o -name "requirements.txt"
    
-   # Check for existing rgctl index (daemon cache — no in-repo .rgctl/ required)
-   rgctl -f json metrics --pagerank | head -1 || echo "No rgctl index yet"
+   # Check for existing rgctl index (artifacts at {repo}/.rgctl/)
+   rgctl -f json metrics --pagerank || echo "No rgctl index yet"
    ```
 
 2. **Analyze the codebase**
    - Invoke **mig-rgctl** (Phase 1 discover recipe in [workflow.md](mig-rgctl/references/workflow.md))
    - Validate: `rgctl -f json metrics --pagerank` and `rgctl -f json communities list`
-   - Query with `blast-radius`, `gql`, `migration_plan.json` when exported
+   - If `rgctl -f json status` shows stale index → `rgctl update` (do not loop full discover)
+   - Query with `blast-radius`, `gql`, and `.rgctl/migration_plan.json` v2 `.steps[]` when exported
 
 3. **Understand the migration goal**
    - If user provided clear target (e.g., "migrate to Quarkus"), proceed
@@ -111,6 +112,7 @@ When assigned a migration task:
 
 7. **Execute the migration**
    - Invoke mig-execute to implement the plan
+   - After every phase or wave that **changes application source files**, run `rgctl update` before the next phase, wave, or graph query (see [mig-rgctl](mig-rgctl/SKILL.md))
    - Monitor progress actively
    - Handle failures gracefully (see Failure Handling below)
    - Update user on major milestones
@@ -120,6 +122,7 @@ When assigned a migration task:
    - Verify tests pass
    - Ensure containerization works
    - Validate deployment configs
+   - Confirm `rgctl -f json status` shows `index_current: true` after source edits
 
 ### Phase 4: Reporting and Handoff
 
